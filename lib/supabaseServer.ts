@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 // サーバー側（API Route）専用のSupabaseクライアントです。
 // SUPABASE_SERVICE_ROLE_KEY はブラウザに絶対に露出させないでください。
-// このファイルは app/api/submit/route.ts からのみ読み込まれます。
+// app/api/submit/route.ts と app/api/admin/* から読み込まれます。
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

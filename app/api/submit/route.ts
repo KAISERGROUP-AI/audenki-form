@@ -8,7 +8,8 @@ import { getByPath } from "@/lib/paths";
 // このAPI Routeが担う処理は3つだけです。
 // 1) サーバー側での必須項目チェック
 // 2) Supabaseへの保存
-// 3) Gmail 2名への通知メール送信
+// 3) Gmail通知メール送信（NOTIFY_EMAIL_1は必須、NOTIFY_EMAIL_2は任意。
+//    2人目を追加したくなったら、Vercelの環境変数にNOTIFY_EMAIL_2を追加するだけでOK）
 // フォーム項目を追加/削除した場合、ここは触らずに
 // lib/formSections.ts と lib/types.ts の変更だけで追従します。
 
@@ -72,13 +73,17 @@ async function sendNotificationEmail(data: AudenkiFormData) {
   const gmailUser = process.env.GMAIL_USER;
   const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
   const recipient1 = process.env.NOTIFY_EMAIL_1;
-  const recipient2 = process.env.NOTIFY_EMAIL_2;
+  const recipient2 = process.env.NOTIFY_EMAIL_2; // 任意：2人目を増やす場合はVercelに追加するだけ
 
-  if (!gmailUser || !gmailAppPassword || !recipient1 || !recipient2) {
+  if (!gmailUser || !gmailAppPassword || !recipient1) {
     throw new Error(
-      "メール通知の環境変数（GMAIL_USER / GMAIL_APP_PASSWORD / NOTIFY_EMAIL_1 / NOTIFY_EMAIL_2）が不足しています。"
+      "メール通知の環境変数（GMAIL_USER / GMAIL_APP_PASSWORD / NOTIFY_EMAIL_1）が不足しています。"
     );
   }
+
+  const recipients = [recipient1, recipient2].filter(
+    (email): email is string => Boolean(email && email.trim() !== "")
+  );
 
   const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -90,7 +95,7 @@ async function sendNotificationEmail(data: AudenkiFormData) {
 
   await transporter.sendMail({
     from: gmailUser,
-    to: [recipient1, recipient2],
+    to: recipients,
     subject: `【auでんき】新規お申し込み連携（${data.contractorName || "お名前未入力"}様）`,
     html: buildNotificationHtml(data),
   });
