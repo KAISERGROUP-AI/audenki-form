@@ -30,6 +30,9 @@ export function AdminHeader({ username, role }: { username: string; role: AdminR
             <Link href="/admin/companies" className={linkClass("/admin/companies")}>
               会社連絡先
             </Link>
+            <Link href="/admin/dashboard" className={linkClass("/admin/dashboard")}>
+              月次ダッシュボード
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">
