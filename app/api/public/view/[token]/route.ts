@@ -60,7 +60,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     {
       success: true,
       companyName: contact.company_name,
-      totalCount: applications?.length ?? 0,
+    　 debugTime: new Date().toISOString(),
+     totalCount: applications?.length ?? 0,
       counts,
       applications,
     },
