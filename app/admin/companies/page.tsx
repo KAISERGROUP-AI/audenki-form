@@ -22,6 +22,7 @@ export default function AdminCompaniesPage() {
   const [copiedCompany, setCopiedCompany] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
   const [newCompanyName, setNewCompanyName] = useState("");
+  const [newCompanyEmail, setNewCompanyEmail] = useState("");
 
   async function load() {
     setLoading(true);
@@ -47,14 +48,14 @@ export default function AdminCompaniesPage() {
   }, []);
 
   async function handleAddCompany() {
-    if (!newCompanyName.trim()) return;
+    if (!newCompanyName.trim() || !newCompanyEmail.trim()) return;
     setSavingCompany(newCompanyName);
     setMessage(null);
     try {
       const res = await fetch("/api/admin/companies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyName: newCompanyName.trim(), contactEmail: "" }),
+        body: JSON.stringify({ companyName: newCompanyName.trim(), contactEmail: newCompanyEmail.trim() }),
       });
       const result = await res.json();
       if (!res.ok || !result.success) {
@@ -62,6 +63,7 @@ export default function AdminCompaniesPage() {
       } else {
         setMessage(`「${newCompanyName.trim()}」を登録しました。`);
         setNewCompanyName("");
+        setNewCompanyEmail("");
         await load();
       }
     } catch {
@@ -151,7 +153,7 @@ export default function AdminCompaniesPage() {
         </p>
 
         {user.role === "editor" && (
-          <div className="mt-6 flex items-center gap-2 rounded-xl border border-stone-200 bg-white p-4">
+          <div className="mt-6 flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-4 sm:flex-row sm:items-center">
             <input
               type="text"
               value={newCompanyName}
@@ -159,9 +161,16 @@ export default function AdminCompaniesPage() {
               placeholder="新しい会社名（例：株式会社◯◯）"
               className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
             />
+            <input
+              type="email"
+              value={newCompanyEmail}
+              onChange={(e) => setNewCompanyEmail(e.target.value)}
+              placeholder="通知先メールアドレス"
+              className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
             <button
               onClick={handleAddCompany}
-              disabled={!newCompanyName.trim() || savingCompany === newCompanyName}
+              disabled={!newCompanyName.trim() || !newCompanyEmail.trim() || savingCompany === newCompanyName}
               className="shrink-0 rounded-lg bg-orange-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
             >
               会社を登録
