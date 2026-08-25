@@ -54,7 +54,20 @@ async function sendReturnNotification(params: {
           確認が必要な項目がございましたのでご連絡いたします。
         </p>
         ${params.note ? `<p><strong>差し戻し理由：</strong><br>${escapeHtml(params.note)}</p>` : ""}
-        <p>お手数ですが、内容をご確認のうえ再度ご連携をお願いいたします。</p>
+        <p>お手数ですが、内容をご確認のうえ、本メールに返信する形でご連絡くださいますようお願いいたします。</p>
+        <hr style="margin:24px 0;border:none;border-top:1px solid #ddd;" />
+        <p style="font-size:13px;color:#555;line-height:1.8;">
+          株式会社KAISER GROUP<br>
+          TEL: 082-236-7133<br>
+          Mail: info@kaisergroup.company<br>
+          HP: <a href="https://kaisergroup.company/">https://kaisergroup.company/</a><br>
+          <br>
+          〒734-0022<br>
+          広島県広島市南区東雲3丁目3-20<br>
+          事業者届出番号: H2312450<br>
+          適格請求書発行事業者登録番号: T8240001061349<br>
+          古物商許可番号:第731032600032号
+        </p>
       </div>
     `,
   });
