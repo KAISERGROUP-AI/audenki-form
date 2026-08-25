@@ -21,6 +21,9 @@ export default function AdminCompaniesPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [copiedCompany, setCopiedCompany] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
+    const [origin, setOrigin] = useState("");
+  const [newCompanyName, setNewCompanyName] = useState("");
+
 
   async function load() {
     setLoading(true);
@@ -44,6 +47,32 @@ export default function AdminCompaniesPage() {
     setOrigin(window.location.origin);
     load();
   }, []);
+  async function handleAddCompany() {
+    if (!newCompanyName.trim()) return;
+    setSavingCompany(newCompanyName);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/companies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyName: newCompanyName.trim(), contactEmail: "" }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        setMessage(result.error ?? "会社の登録に失敗しました。");
+      } else {
+        setMessage(`「${newCompanyName.trim()}」を登録しました。`);
+        setNewCompanyName("");
+        await load();
+      }
+    } catch {
+      setMessage("通信エラーが発生しました。");
+    } finally {
+      setSavingCompany(null);
+    }
+  }
+
+  async function handleSave(companyName: string) {
 
   async function handleSave(companyName: string) {
     setSavingCompany(companyName);
@@ -123,6 +152,26 @@ export default function AdminCompaniesPage() {
           「通知先メール」は、ステータスが「③返却」になったときの連絡先です。<br />
           「進捗確認リンク」は、会社側に共有すると進捗ステータスと件数だけを閲覧できる専用ページ（編集不可）です。
         </p>
+        {user.role === "editor" && (
+          <div className="mt-6 flex items-center gap-2 rounded-xl border border-stone-200 bg-white p-4">
+            <input
+              type="text"
+              value={newCompanyName}
+              onChange={(e) => setNewCompanyName(e.target.value)}
+              placeholder="新しい会社名（例：株式会社◯◯）"
+              className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+            <button
+              onClick={handleAddCompany}
+              disabled={!newCompanyName.trim() || savingCompany === newCompanyName}
+              className="shrink-0 rounded-lg bg-orange-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
+            >
+              会社を登録
+            </button>
+          </div>
+        )}
+
+        {message && (
 
         {message && (
           <div className="mt-4 rounded-lg border border-stone-200 bg-white p-3 text-sm font-medium text-stone-700">
