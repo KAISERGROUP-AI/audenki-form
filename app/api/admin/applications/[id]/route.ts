@@ -9,11 +9,13 @@ interface RouteParams {
 }
 
 function splitRecipients(raw: string): string[] {
-  const parts: string[] = raw.split(",");
+  const parts = raw.split(",");
   const trimmed: string[] = [];
   for (let i = 0; i < parts.length; i++) {
     const v = parts[i].trim();
-    if (v.length > 0) trimmed.push(v);
+    if (v.length > 0) {
+      trimmed.push(v);
+    }
   }
   return trimmed;
 }
@@ -46,8 +48,6 @@ async function sendReturnNotification(params: {
     );
   }
 
-  // 通知先メールは「a@example.com, b@example.com」のようにカンマ区切りで
-  // 複数登録できます（1つだけでも問題ありません）。
   const recipients = splitRecipients(contact.contact_email);
 
   if (recipients.length === 0) {
