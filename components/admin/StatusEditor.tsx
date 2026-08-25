@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { APPLICATION_STATUSES, ApplicationStatus, NOTIFY_ON_STATUS } from "@/lib/statusConfig";
+import { APPLICATION_STATUSES, ApplicationStatus, NOTIFY_ON_STATUS, STATUS_STYLES } from "@/lib/statusConfig";
 
 interface Props {
   applicationId: string;
@@ -88,16 +88,19 @@ export function StatusEditor({ applicationId, currentStatus, onUpdated }: Props)
     );
   }
 
+  const currentStyle =
+    STATUS_STYLES[currentStatus as ApplicationStatus] ?? "bg-white text-stone-700 border-stone-300";
+
   return (
     <div className="flex flex-col gap-1">
       <select
         value={currentStatus}
         disabled={submitting}
         onChange={(e) => handleSelect(e.target.value)}
-        className="rounded-md border border-stone-300 bg-white px-2 py-1.5 text-sm"
+        className={`rounded-md border px-2 py-1.5 text-sm font-bold ${currentStyle}`}
       >
         {APPLICATION_STATUSES.map((s) => (
-          <option key={s} value={s}>
+          <option key={s} value={s} className="bg-white text-stone-800">
             {s}
           </option>
         ))}
