@@ -21,9 +21,7 @@ export default function AdminCompaniesPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [copiedCompany, setCopiedCompany] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
-    const [origin, setOrigin] = useState("");
   const [newCompanyName, setNewCompanyName] = useState("");
-
 
   async function load() {
     setLoading(true);
@@ -47,6 +45,7 @@ export default function AdminCompaniesPage() {
     setOrigin(window.location.origin);
     load();
   }, []);
+
   async function handleAddCompany() {
     if (!newCompanyName.trim()) return;
     setSavingCompany(newCompanyName);
@@ -71,8 +70,6 @@ export default function AdminCompaniesPage() {
       setSavingCompany(null);
     }
   }
-
-  async function handleSave(companyName: string) {
 
   async function handleSave(companyName: string) {
     setSavingCompany(companyName);
@@ -152,6 +149,7 @@ export default function AdminCompaniesPage() {
           「通知先メール」は、ステータスが「③返却」になったときの連絡先です。<br />
           「進捗確認リンク」は、会社側に共有すると進捗ステータスと件数だけを閲覧できる専用ページ（編集不可）です。
         </p>
+
         {user.role === "editor" && (
           <div className="mt-6 flex items-center gap-2 rounded-xl border border-stone-200 bg-white p-4">
             <input
@@ -170,8 +168,6 @@ export default function AdminCompaniesPage() {
             </button>
           </div>
         )}
-
-        {message && (
 
         {message && (
           <div className="mt-4 rounded-lg border border-stone-200 bg-white p-3 text-sm font-medium text-stone-700">
