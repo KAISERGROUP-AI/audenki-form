@@ -6,11 +6,18 @@ import { APPLICATION_STATUSES } from "@/lib/statusConfig";
 
 type AdminRole = "editor" | "viewer";
 
+interface CompanyRow {
+  companyName: string;
+  count: number;
+  target: number;
+}
+
 interface DashboardData {
   yearMonth: string;
   totalCount: number;
   counts: Record<string, number>;
   target: number;
+  companies: CompanyRow[];
 }
 
 function currentYearMonth(): string {
@@ -25,8 +32,10 @@ export default function AdminDashboardPage() {
   const [month, setMonth] = useState(currentYearMonth());
   const [data, setData] = useState<DashboardData | null>(null);
   const [targetDraft, setTargetDraft] = useState("0");
+  const [companyTargetDrafts, setCompanyTargetDrafts] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingCompany, setSavingCompany] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async (m: string) => {
@@ -40,6 +49,9 @@ export default function AdminDashboardPage() {
       } else {
         setData(result);
         setTargetDraft(String(result.target ?? 0));
+        const drafts: Record<string, string> = {};
+        for (const c of result.companies ?? []) drafts[c.companyName] = String(c.target ?? 0);
+        setCompanyTargetDrafts(drafts);
       }
     } catch {
       setMessage("通信エラーが発生しました。");
@@ -93,6 +105,35 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function handleSaveCompanyTarget(companyName: string) {
+    const raw = companyTargetDrafts[companyName] ?? "0";
+    const target = parseInt(raw, 10);
+    if (isNaN(target) || target < 0) {
+      setMessage("正しい数値を入力してください。");
+      return;
+    }
+    setSavingCompany(companyName);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yearMonth: month, target, companyName }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        setMessage(result.error ?? "保存に失敗しました。");
+      } else {
+        setMessage(`「${companyName}」の目標を保存しました。`);
+        await load(month);
+      }
+    } catch {
+      setMessage("通信エラーが発生しました。");
+    } finally {
+      setSavingCompany(null);
+    }
+  }
+
   if (!user) {
     return <div className="p-8 text-sm text-stone-500">読み込み中…</div>;
   }
@@ -143,7 +184,7 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="rounded-xl border border-stone-200 bg-white p-5">
-              <p className="text-sm font-bold text-stone-800">今月の目標</p>
+              <p className="text-sm font-bold text-stone-800">全体の目標</p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   type="number"
@@ -184,9 +225,68 @@ export default function AdminDashboardPage() {
                 <p className="mt-3 text-xs text-stone-400">目標を設定すると進捗％が表示されます。</p>
               )}
             </div>
+
+            <h2 className="mb-3 mt-8 text-sm font-bold text-stone-800">会社別の獲得件数</h2>
+            {data?.companies.length === 0 ? (
+              <p className="text-sm text-stone-500">まだ会社データがありません。</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {data?.companies.map((c) => {
+                  const cProgress =
+                    c.target > 0 ? Math.min(100, Math.round((c.count / c.target) * 1000) / 10) : null;
+                  return (
+                    <div key={c.companyName} className="rounded-xl border border-stone-200 bg-white p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-stone-800">{c.companyName}</span>
+                        <span className="text-sm font-bold text-stone-600">{c.count}件</span>
+                      </div>
+
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          type="number"
+                          min={0}
+                          value={companyTargetDrafts[c.companyName] ?? "0"}
+                          onChange={(e) =>
+                            setCompanyTargetDrafts((prev) => ({ ...prev, [c.companyName]: e.target.value }))
+                          }
+                          disabled={user.role !== "editor"}
+                          placeholder="目標件数"
+                          className="w-32 rounded-lg border border-stone-300 px-3 py-1.5 text-xs disabled:bg-stone-50"
+                        />
+                        {user.role === "editor" && (
+                          <button
+                            onClick={() => handleSaveCompanyTarget(c.companyName)}
+                            disabled={savingCompany === c.companyName}
+                            className="shrink-0 rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700 disabled:opacity-60"
+                          >
+                            {savingCompany === c.companyName ? "保存中…" : "目標を保存"}
+                          </button>
+                        )}
+                      </div>
+
+                      {cProgress !== null ? (
+                        <div className="mt-3">
+                          <div className="mb-1 flex items-center justify-between text-xs text-stone-500">
+                            <span>
+                              進捗 {c.count} / {c.target} 件
+                            </span>
+                            <span className="font-bold text-orange-600">{cProgress}%</span>
+                          </div>
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-stone-100">
+                            <div
+                              className="h-full rounded-full bg-orange-500"
+                              style={{ width: `${cProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-xs text-stone-400">目標を設定すると進捗％が表示されます。</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
-      </main>
-    </div>
-  );
-}
+      
