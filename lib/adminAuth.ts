@@ -57,12 +57,12 @@ function base64UrlEncode(bytes: Uint8Array | ArrayBuffer): string {
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function base64UrlDecode(value: string): Uint8Array {
+function base64UrlDecode(value: string): ArrayBuffer {
   const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
   const str = atob(padded);
   const bytes = new Uint8Array(str.length);
   for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
-  return bytes;
+  return bytes.buffer;
 }
 
 async function getHmacKey(): Promise<CryptoKey> {
