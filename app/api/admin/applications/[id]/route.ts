@@ -36,6 +36,19 @@ async function sendReturnNotification(params: {
     );
   }
 
+  // 通知先メールは「a@example.com, b@example.com」のようにカンマ区切りで
+  // 複数登録できます（1つだけでも問題ありません）。
+  const recipients = contact.contact_email
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (recipients.length === 0) {
+    throw new Error(
+      `「${params.companyName}」の通知先メールアドレスが未登録です。管理画面の「会社連絡先」から登録してください。`
+    );
+  }
+
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: { user: gmailUser, pass: gmailAppPassword },
@@ -43,7 +56,7 @@ async function sendReturnNotification(params: {
 
   await transporter.sendMail({
     from: gmailUser,
-    to: contact.contact_email,
+    to: recipients,
     subject: `【auでんき】お申し込み内容のご確認のお願い（${params.contractorName}様）`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
