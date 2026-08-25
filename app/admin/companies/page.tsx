@@ -11,10 +11,21 @@ interface CompanyContact {
   viewToken: string | null;
 }
 
+function splitEmails(raw: string): [string, string] {
+  const parts = raw.split(",").map((s) => s.trim());
+  return [parts[0] ?? "", parts[1] ?? ""];
+}
+
+function joinEmails(email1: string, email2: string): string {
+  const list = [email1.trim(), email2.trim()].filter(Boolean);
+  return list.join(",");
+}
+
 export default function AdminCompaniesPage() {
   const [user, setUser] = useState<{ username: string; role: AdminRole } | null>(null);
   const [companies, setCompanies] = useState<CompanyContact[]>([]);
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [drafts1, setDrafts1] = useState<Record<string, string>>({});
+  const [drafts2, setDrafts2] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [savingCompany, setSavingCompany] = useState<string | null>(null);
   const [generatingCompany, setGeneratingCompany] = useState<string | null>(null);
@@ -22,7 +33,8 @@ export default function AdminCompaniesPage() {
   const [copiedCompany, setCopiedCompany] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
   const [newCompanyName, setNewCompanyName] = useState("");
-  const [newCompanyEmail, setNewCompanyEmail] = useState("");
+  const [newCompanyEmail1, setNewCompanyEmail1] = useState("");
+  const [newCompanyEmail2, setNewCompanyEmail2] = useState("");
 
   async function load() {
     setLoading(true);
@@ -35,9 +47,15 @@ export default function AdminCompaniesPage() {
     if (res.ok) {
       const result = await res.json();
       setCompanies(result.companies);
-      const initialDrafts: Record<string, string> = {};
-      for (const c of result.companies) initialDrafts[c.companyName] = c.contactEmail;
-      setDrafts(initialDrafts);
+      const initialDrafts1: Record<string, string> = {};
+      const initialDrafts2: Record<string, string> = {};
+      for (const c of result.companies) {
+        const [e1, e2] = splitEmails(c.contactEmail ?? "");
+        initialDrafts1[c.companyName] = e1;
+        initialDrafts2[c.companyName] = e2;
+      }
+      setDrafts1(initialDrafts1);
+      setDrafts2(initialDrafts2);
     }
     setLoading(false);
   }
@@ -48,14 +66,17 @@ export default function AdminCompaniesPage() {
   }, []);
 
   async function handleAddCompany() {
-    if (!newCompanyName.trim() || !newCompanyEmail.trim()) return;
+    if (!newCompanyName.trim() || !newCompanyEmail1.trim()) return;
     setSavingCompany(newCompanyName);
     setMessage(null);
     try {
       const res = await fetch("/api/admin/companies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyName: newCompanyName.trim(), contactEmail: newCompanyEmail.trim() }),
+        body: JSON.stringify({
+          companyName: newCompanyName.trim(),
+          contactEmail: joinEmails(newCompanyEmail1, newCompanyEmail2),
+        }),
       });
       const result = await res.json();
       if (!res.ok || !result.success) {
@@ -63,7 +84,8 @@ export default function AdminCompaniesPage() {
       } else {
         setMessage(`「${newCompanyName.trim()}」を登録しました。`);
         setNewCompanyName("");
-        setNewCompanyEmail("");
+        setNewCompanyEmail1("");
+        setNewCompanyEmail2("");
         await load();
       }
     } catch {
@@ -77,10 +99,11 @@ export default function AdminCompaniesPage() {
     setSavingCompany(companyName);
     setMessage(null);
     try {
+      const contactEmail = joinEmails(drafts1[companyName] ?? "", drafts2[companyName] ?? "");
       const res = await fetch("/api/admin/companies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyName, contactEmail: drafts[companyName] }),
+        body: JSON.stringify({ companyName, contactEmail }),
       });
       const result = await res.json();
       if (!res.ok || !result.success) {
@@ -88,7 +111,7 @@ export default function AdminCompaniesPage() {
       } else {
         setMessage(`「${companyName}」の連絡先を保存しました。`);
         setCompanies((prev) =>
-          prev.map((c) => (c.companyName === companyName ? { ...c, contactEmail: drafts[companyName] } : c))
+          prev.map((c) => (c.companyName === companyName ? { ...c, contactEmail } : c))
         );
       }
     } catch {
@@ -148,30 +171,39 @@ export default function AdminCompaniesPage() {
       <main className="mx-auto max-w-3xl px-5 py-8">
         <h1 className="text-lg font-bold text-stone-800">会社連絡先・進捗確認リンク</h1>
         <p className="mt-1 text-sm text-stone-500">
-          「通知先メール」は、ステータスが「③返却」になったときの連絡先です。<br />
+          「通知先メール」は、ステータスが「③返却」になったときの連絡先です。2人まで登録できます。<br />
           「進捗確認リンク」は、会社側に共有すると進捗ステータスと件数だけを閲覧できる専用ページ（編集不可）です。
         </p>
 
         {user.role === "editor" && (
-          <div className="mt-6 flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-4 sm:flex-row sm:items-center">
+          <div className="mt-6 flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-4">
             <input
               type="text"
               value={newCompanyName}
               onChange={(e) => setNewCompanyName(e.target.value)}
               placeholder="新しい会社名（例：株式会社◯◯）"
-              className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
             />
-            <input
-              type="email"
-              value={newCompanyEmail}
-              onChange={(e) => setNewCompanyEmail(e.target.value)}
-              placeholder="通知先メールアドレス"
-              className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="email"
+                value={newCompanyEmail1}
+                onChange={(e) => setNewCompanyEmail1(e.target.value)}
+                placeholder="通知先メール1"
+                className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+              <input
+                type="email"
+                value={newCompanyEmail2}
+                onChange={(e) => setNewCompanyEmail2(e.target.value)}
+                placeholder="通知先メール2（任意）"
+                className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </div>
             <button
               onClick={handleAddCompany}
-              disabled={!newCompanyName.trim() || !newCompanyEmail.trim() || savingCompany === newCompanyName}
-              className="shrink-0 rounded-lg bg-orange-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
+              disabled={!newCompanyName.trim() || !newCompanyEmail1.trim() || savingCompany === newCompanyName}
+              className="self-start rounded-lg bg-orange-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
             >
               会社を登録
             </button>
@@ -194,15 +226,23 @@ export default function AdminCompaniesPage() {
               <div key={c.companyName} className="rounded-xl border border-stone-200 bg-white p-5">
                 <div className="font-bold text-stone-800">{c.companyName}</div>
 
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <span className="w-28 shrink-0 text-xs text-stone-500">通知先メール</span>
-                  <div className="flex flex-1 items-center gap-2">
+                <div className="mt-3 flex flex-col gap-2">
+                  <span className="text-xs text-stone-500">通知先メール</span>
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <input
                       type="email"
-                      value={drafts[c.companyName] ?? ""}
-                      onChange={(e) => setDrafts((prev) => ({ ...prev, [c.companyName]: e.target.value }))}
+                      value={drafts1[c.companyName] ?? ""}
+                      onChange={(e) => setDrafts1((prev) => ({ ...prev, [c.companyName]: e.target.value }))}
                       disabled={user.role !== "editor"}
-                      placeholder="通知先メールアドレス"
+                      placeholder="通知先メール1"
+                      className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50"
+                    />
+                    <input
+                      type="email"
+                      value={drafts2[c.companyName] ?? ""}
+                      onChange={(e) => setDrafts2((prev) => ({ ...prev, [c.companyName]: e.target.value }))}
+                      disabled={user.role !== "editor"}
+                      placeholder="通知先メール2（任意）"
                       className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50"
                     />
                     {user.role === "editor" && (
