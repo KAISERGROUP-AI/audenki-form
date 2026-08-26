@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { getSupabaseServerClient } from "@/lib/supabaseServer";
 
 export async function GET() {
-  const { data, error } = await supabaseServer
+  const supabase = getSupabaseServerClient();
+
+  const { data, error } = await supabase
     .from("company_contacts")
     .select("company_name")
     .order("company_name", { ascending: true });
