@@ -110,10 +110,9 @@ export const FORM_SECTIONS: SectionConfig[] = [
       {
         path: "companyName",
         label: "会社名",
-        type: "text",
+        type: "select",
         required: true,
-        placeholder: "例：株式会社KAISER GROUP",
-        autoComplete: "organization",
+        placeholder: "会社名を選択してください",
       },
       {
         path: "staffName",
