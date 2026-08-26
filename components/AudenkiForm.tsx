@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AudenkiFormData, emptyFormData } from "@/lib/types";
-import { FORM_SECTIONS } from "@/lib/formSections";
+import { FORM_SECTIONS, FieldConfig, SectionConfig } from "@/lib/formSections";
 import { getByPath, setByPath } from "@/lib/paths";
 import { FormHeader, Step } from "./FormHeader";
 import { FormSectionCard } from "./FormSectionCard";
@@ -17,6 +17,22 @@ export function AudenkiForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [companyOptions, setCompanyOptions] = useState<{ value: string; label: string }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/public/companies");
+        const result = await res.json();
+        if (res.ok && result.success) {
+          const options = (result.companies as string[]).map((name) => ({ value: name, label: name }));
+          setCompanyOptions(options);
+        }
+      } catch {
+        // 取得できなくてもフォーム自体は使えるようにしておく（空のプルダウンになる）
+      }
+    })();
+  }, []);
 
   function updateField(path: string, value: string) {
     setData((prev) => setByPath(prev, path, value));
@@ -86,6 +102,13 @@ export function AudenkiForm() {
     }
   }
 
+  function resolveField(field: FieldConfig): FieldConfig {
+    if (field.path === "companyName") {
+      return { ...field, options: companyOptions };
+    }
+    return field;
+  }
+
   return (
     <div className="min-h-dvh bg-paper pb-16">
       <FormHeader step={step} />
@@ -93,18 +116,21 @@ export function AudenkiForm() {
       <main className="mx-auto max-w-2xl px-5 pt-8 md:px-8">
         {step === "input" && (
           <div className="flex flex-col gap-5">
-            {FORM_SECTIONS.map((section) => (
+            {FORM_SECTIONS.map((section: SectionConfig) => (
               <FormSectionCard key={section.number} section={section}>
-                {section.fields.map((field) => (
-                  <div id={`field-${field.path}`} key={field.path} className="scroll-mt-24">
-                    <FormField
-                      field={field}
-                      value={getByPath(data, field.path)}
-                      onChange={(v) => updateField(field.path, v)}
-                      error={fieldErrors[field.path]}
-                    />
-                  </div>
-                ))}
+                {section.fields.map((rawField) => {
+                  const field = resolveField(rawField);
+                  return (
+                    <div id={`field-${field.path}`} key={field.path} className="scroll-mt-24">
+                      <FormField
+                        field={field}
+                        value={getByPath(data, field.path)}
+                        onChange={(v) => updateField(field.path, v)}
+                        error={fieldErrors[field.path]}
+                      />
+                    </div>
+                  );
+                })}
               </FormSectionCard>
             ))}
 
