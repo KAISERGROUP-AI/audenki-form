@@ -43,16 +43,65 @@ export function AudenkiForm() {
         return next;
       });
     }
+
+    // 郵便番号（usageAddress.postalCode / previousAddress.postalCode）が
+    // 7桁の数字になったタイミングで、住所を自動取得して都道府県・市区町村を埋める。
+    if (path.endsWith(".postalCode")) {
+      const digitsOnly = value.replace(/[^0-9]/g, "");
+      if (digitsOnly.length === 7) {
+        void autoFillAddress(path, digitsOnly);
+      }
+    }
+  }
+
+  async function autoFillAddress(postalCodePath: string, zipcode: string) {
+    const prefix = postalCodePath.replace(".postalCode", "");
+    try {
+      const res = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zipcode}`);
+      const result = await res.json();
+      const address = result?.results?.[0];
+      if (address) {
+        setData((prev) => {
+          let next = setByPath(prev, `${prefix}.prefecture`, address.address1 ?? "");
+          next = setByPath(next, `${prefix}.city`, `${address.address2 ?? ""}${address.address3 ?? ""}`);
+          return next;
+        });
+        setFieldErrors((prev) => {
+          const next = { ...prev };
+          delete next[`${prefix}.prefecture`];
+          delete next[`${prefix}.city`];
+          return next;
+        });
+      }
+    } catch {
+      // 住所自動取得に失敗しても、手入力で続行できるので何もしない
+    }
   }
 
   function validateAll(): Record<string, string> {
     const errors: Record<string, string> = {};
     for (const section of FORM_SECTIONS) {
       for (const field of section.fields) {
+        const value = getByPath(data, field.path);
+
         if (field.required) {
-          const value = getByPath(data, field.path);
           if (!value || value.trim() === "") {
             errors[field.path] = `${field.label}を入力してください。`;
+            continue;
+          }
+        }
+
+        if (field.path === "phoneNumber" && value) {
+          const digitsOnly = value.replace(/[^0-9]/g, "");
+          if (digitsOnly.length !== 11) {
+            errors[field.path] = "電話番号は11桁で入力してください。";
+          }
+        }
+
+        if (field.path === "supplyPointNumber" && value) {
+          const digitsOnly = value.replace(/[^0-9]/g, "");
+          if (digitsOnly.length !== 22) {
+            errors[field.path] = "供給地点番号は22桁で入力してください。";
           }
         }
       }
