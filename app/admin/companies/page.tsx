@@ -26,8 +26,12 @@ export default function AdminCompaniesPage() {
   const [companies, setCompanies] = useState<CompanyContact[]>([]);
   const [drafts1, setDrafts1] = useState<Record<string, string>>({});
   const [drafts2, setDrafts2] = useState<Record<string, string>>({});
+  const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
+  const [editingName, setEditingName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingCompany, setSavingCompany] = useState<string | null>(null);
+  const [renamingCompany, setRenamingCompany] = useState<string | null>(null);
+  const [deletingCompany, setDeletingCompany] = useState<string | null>(null);
   const [generatingCompany, setGeneratingCompany] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [copiedCompany, setCopiedCompany] = useState<string | null>(null);
@@ -49,13 +53,16 @@ export default function AdminCompaniesPage() {
       setCompanies(result.companies);
       const initialDrafts1: Record<string, string> = {};
       const initialDrafts2: Record<string, string> = {};
+      const initialNameDrafts: Record<string, string> = {};
       for (const c of result.companies) {
         const [e1, e2] = splitEmails(c.contactEmail ?? "");
         initialDrafts1[c.companyName] = e1;
         initialDrafts2[c.companyName] = e2;
+        initialNameDrafts[c.companyName] = c.companyName;
       }
       setDrafts1(initialDrafts1);
       setDrafts2(initialDrafts2);
+      setNameDrafts(initialNameDrafts);
     }
     setLoading(false);
   }
@@ -121,6 +128,67 @@ export default function AdminCompaniesPage() {
     }
   }
 
+  async function handleRename(oldName: string) {
+    const newName = (nameDrafts[oldName] ?? "").trim();
+    if (!newName) {
+      setMessage("会社名を入力してください。");
+      return;
+    }
+    if (newName === oldName) {
+      setEditingName(null);
+      return;
+    }
+    setRenamingCompany(oldName);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/companies", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldName, newName }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        setMessage(result.error ?? "会社名の変更に失敗しました。");
+      } else {
+        setMessage(`「${oldName}」を「${newName}」に変更しました。`);
+        setEditingName(null);
+        await load();
+      }
+    } catch {
+      setMessage("通信エラーが発生しました。");
+    } finally {
+      setRenamingCompany(null);
+    }
+  }
+
+  async function handleDelete(companyName: string) {
+    const confirmed = window.confirm(
+      `「${companyName}」の連絡先登録を削除します。過去の申し込み履歴は残ります。よろしいですか？`
+    );
+    if (!confirmed) return;
+
+    setDeletingCompany(companyName);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/companies", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyName }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        setMessage(result.error ?? "削除に失敗しました。");
+      } else {
+        setMessage(`「${companyName}」を削除しました。`);
+        await load();
+      }
+    } catch {
+      setMessage("通信エラーが発生しました。");
+    } finally {
+      setDeletingCompany(null);
+    }
+  }
+
   async function handleGenerateLink(companyName: string) {
     setGeneratingCompany(companyName);
     setMessage(null);
@@ -172,7 +240,9 @@ export default function AdminCompaniesPage() {
         <h1 className="text-lg font-bold text-stone-800">会社連絡先・進捗確認リンク</h1>
         <p className="mt-1 text-sm text-stone-500">
           「通知先メール」は、ステータスが「③返却」になったときの連絡先です。2人まで登録できます。<br />
-          「進捗確認リンク」は、会社側に共有すると進捗ステータスと件数だけを閲覧できる専用ページ（編集不可）です。
+          「進捗確認リンク」は、会社側に共有すると進捗ステータスと件数だけを閲覧できる専用ページ（編集不可）です。<br />
+          会社名は編集（改名）できます。改名すると過去の申し込み履歴もすべて新しい名前に引き継がれます。<br />
+          「削除」は連絡先登録だけを消します（過去の申し込み履歴は残ります）。
         </p>
 
         {user.role === "editor" && (
@@ -224,7 +294,57 @@ export default function AdminCompaniesPage() {
           <div className="mt-6 flex flex-col gap-4">
             {companies.map((c) => (
               <div key={c.companyName} className="rounded-xl border border-stone-200 bg-white p-5">
-                <div className="font-bold text-stone-800">{c.companyName}</div>
+                <div className="flex items-center justify-between gap-2">
+                  {editingName === c.companyName ? (
+                    <div className="flex flex-1 items-center gap-2">
+                      <input
+                        type="text"
+                        value={nameDrafts[c.companyName] ?? c.companyName}
+                        onChange={(e) =>
+                          setNameDrafts((prev) => ({ ...prev, [c.companyName]: e.target.value }))
+                        }
+                        className="flex-1 rounded-lg border border-stone-300 px-3 py-1.5 text-sm font-bold"
+                      />
+                      <button
+                        onClick={() => handleRename(c.companyName)}
+                        disabled={renamingCompany === c.companyName}
+                        className="shrink-0 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+                      >
+                        {renamingCompany === c.companyName ? "保存中…" : "保存"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingName(null);
+                          setNameDrafts((prev) => ({ ...prev, [c.companyName]: c.companyName }));
+                        }}
+                        className="shrink-0 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-bold text-stone-600"
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="font-bold text-stone-800">{c.companyName}</div>
+                      {user.role === "editor" && (
+                        <div className="flex shrink-0 gap-2">
+                          <button
+                            onClick={() => setEditingName(c.companyName)}
+                            className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-bold text-stone-600 hover:bg-stone-50"
+                          >
+                            会社名を編集
+                          </button>
+                          <button
+                            onClick={() => handleDelete(c.companyName)}
+                            disabled={deletingCompany === c.companyName}
+                            className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 disabled:opacity-60"
+                          >
+                            {deletingCompany === c.companyName ? "削除中…" : "削除"}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
 
                 <div className="mt-3 flex flex-col gap-2">
                   <span className="text-xs text-stone-500">通知先メール</span>
