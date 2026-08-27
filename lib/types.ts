@@ -22,8 +22,10 @@ export interface AudenkiFormData {
   plan: string; // プラン選択
   desiredStartDate: string; // 使用開始希望日
   desiredStartTime: string; // 使用開始希望時間
+  customerNumber: string; // お客様番号
   supplyPointNumber: string; // 供給地点番号
   currentPowerCompany: string; // 現在利用の電気会社
+  currentPlan: string; // 現在利用中のプラン
 
   // 03 ご契約者様情報
   contractorName: string; // 名前（漢字）
@@ -54,8 +56,10 @@ export const emptyFormData = (): AudenkiFormData => ({
   plan: "",
   desiredStartDate: "",
   desiredStartTime: "",
+  customerNumber: "",
   supplyPointNumber: "",
   currentPowerCompany: "",
+  currentPlan: "",
   contractorName: "",
   contractorNameKana: "",
   birthDate: "",
