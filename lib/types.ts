@@ -38,6 +38,9 @@ export interface AudenkiFormData {
 
   // 05 引越し前住所
   previousAddress: AddressInfo;
+
+  // 06 同意書
+  consentFormImage: string; // 同意書の写真（base64データ）
 }
 
 export const emptyAddress = (): AddressInfo => ({
@@ -65,4 +68,5 @@ export const emptyFormData = (): AudenkiFormData => ({
   phoneType: "",
   usageAddress: emptyAddress(),
   previousAddress: emptyAddress(),
+  consentFormImage: "",
 });
