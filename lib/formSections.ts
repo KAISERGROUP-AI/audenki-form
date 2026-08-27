@@ -185,7 +185,7 @@ export const FORM_SECTIONS: SectionConfig[] = [
         path: "currentPlan",
         label: "現在利用中のプラン",
         type: "text",
-        required: false,
+        required: true,
         placeholder: "例：従量電灯A",
       },
     ],
