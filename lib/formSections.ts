@@ -158,6 +158,13 @@ export const FORM_SECTIONS: SectionConfig[] = [
         placeholder: "選択してください",
       },
       {
+        path: "customerNumber",
+        label: "お客様番号",
+        type: "text",
+        required: true,
+        placeholder: "例：1234567890",
+      },
+      {
         path: "supplyPointNumber",
         label: "供給地点番号",
         type: "text",
@@ -173,6 +180,13 @@ export const FORM_SECTIONS: SectionConfig[] = [
         type: "text",
         required: true,
         placeholder: "例：中国電力",
+      },
+      {
+        path: "currentPlan",
+        label: "現在利用中のプラン",
+        type: "text",
+        required: false,
+        placeholder: "例：従量電灯A",
       },
     ],
   },
