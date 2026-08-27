@@ -1,5 +1,5 @@
 import { AudenkiFormData } from "@/lib/types";
-import { FORM_SECTIONS } from "@/lib/formSections";
+import { FORM_SECTIONS, FieldConfig } from "@/lib/formSections";
 import { getByPath } from "@/lib/paths";
 
 interface Props {
@@ -10,9 +10,10 @@ interface Props {
   errorMessage?: string | null;
 }
 
-function displayValue(field: { path: string; options?: { value: string; label: string }[] }, data: AudenkiFormData) {
+function displayValue(field: FieldConfig, data: AudenkiFormData) {
   const raw = getByPath(data, field.path);
   if (!raw) return "—";
+  if (field.type === "file") return "アップロード済み";
   const opt = field.options?.find((o) => o.value === raw);
   return opt ? opt.label : raw;
 }
@@ -37,9 +38,23 @@ export function ConfirmationView({ data, onBack, onConfirm, submitting, errorMes
             {section.fields.map((field) => (
               <div key={field.path} className="flex flex-col gap-0.5">
                 <dt className="text-xs text-muted">{field.label}</dt>
-                <dd className="text-sm font-medium text-ink break-words">
-                  {displayValue(field, data)}
-                </dd>
+                {field.type === "file" ? (
+                  getByPath(data, field.path) ? (
+                    <dd>
+                      <img
+                        src={getByPath(data, field.path)}
+                        alt={field.label}
+                        className="mt-1 max-h-40 rounded-lg border border-line object-contain"
+                      />
+                    </dd>
+                  ) : (
+                    <dd className="text-sm font-medium text-ink">—</dd>
+                  )
+                ) : (
+                  <dd className="text-sm font-medium text-ink break-words">
+                    {displayValue(field, data)}
+                  </dd>
+                )}
               </div>
             ))}
           </dl>
