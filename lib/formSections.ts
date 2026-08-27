@@ -5,7 +5,7 @@
 // カラムもあわせて追加してください。
 // ============================================================================
 
-export type FieldType = "text" | "kana" | "tel" | "date" | "time-select" | "select";
+export type FieldType = "text" | "kana" | "tel" | "date" | "time-select" | "select" | "file";
 
 export interface FieldConfig {
   path: string; // フォームデータ内の位置（例: "staffName" / "usageAddress.postalCode"）
@@ -239,5 +239,19 @@ export const FORM_SECTIONS: SectionConfig[] = [
     title: "引越し前住所",
     description: "お引越しされるお客様のみご入力ください。お引越しがない場合は空欄のままで構いません。",
     fields: addressFields("previousAddress", false),
+  },
+  {
+    number: "06",
+    title: "同意書",
+    description: "お客様に署名・捺印いただいた同意書を撮影してアップロードしてください。",
+    fields: [
+      {
+        path: "consentFormImage",
+        label: "同意書の写真",
+        type: "file",
+        required: true,
+        helpText: "文字がはっきり読める明るさ・角度で撮影してください。",
+      },
+    ],
   },
 ];
