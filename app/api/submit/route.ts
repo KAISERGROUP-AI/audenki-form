@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { PDFDocument } from "pdf-lib";
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { AudenkiFormData } from "@/lib/types";
 import { FORM_SECTIONS } from "@/lib/formSections";
@@ -8,8 +9,8 @@ import { getByPath } from "@/lib/paths";
 // このAPI Routeが担う処理は3つだけです。
 // 1) サーバー側での必須項目チェック
 // 2) Supabaseへの保存
-// 3) Gmail通知メール送信（NOTIFY_EMAIL_1は必須、NOTIFY_EMAIL_2は任意。
-//    2人目を追加したくなったら、Vercelの環境変数にNOTIFY_EMAIL_2を追加するだけでOK）
+// 3) Gmail通知メール送信（同意書の写真はPDFに変換して添付します。
+//    NOTIFY_EMAIL_1は必須、NOTIFY_EMAIL_2は任意）
 // フォーム項目を追加/削除した場合、ここは触らずに
 // lib/formSections.ts と lib/types.ts の変更だけで追従します。
 
@@ -32,6 +33,12 @@ function buildNotificationHtml(data: AudenkiFormData): string {
   const rows = FORM_SECTIONS.map((section) => {
     const fieldRows = section.fields
       .map((field) => {
+        if (field.type === "file") {
+          return `<tr>
+            <td style="padding:6px 12px;color:#8A8578;white-space:nowrap;">${field.label}</td>
+            <td style="padding:6px 12px;color:#20242B;">添付のPDFをご確認ください</td>
+          </tr>`;
+        }
         const raw = getByPath(data, field.path);
         const value = raw && raw.trim() !== "" ? raw : "（未入力）";
         return `<tr>
@@ -69,7 +76,33 @@ function escapeHtml(str: string): string {
     .replace(/"/g, "&quot;");
 }
 
-async function sendNotificationEmail(data: AudenkiFormData) {
+// 「data:image/jpeg;base64,xxxx」のような形式のデータURLを、
+// 中のバイナリデータ（Buffer）とMIMEタイプに分解します。
+function parseDataUrl(dataUrl: string): { buffer: Buffer; mimeType: string } | null {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return null;
+  return { mimeType: match[1], buffer: Buffer.from(match[2], "base64") };
+}
+
+// 同意書の写真（JPEG/PNG）を、1ページのPDFに変換します。
+async function convertImageToPdf(dataUrl: string): Promise<Buffer | null> {
+  const parsed = parseDataUrl(dataUrl);
+  if (!parsed) return null;
+
+  const pdfDoc = await PDFDocument.create();
+  const image =
+    parsed.mimeType === "image/png"
+      ? await pdfDoc.embedPng(parsed.buffer)
+      : await pdfDoc.embedJpg(parsed.buffer);
+
+  const page = pdfDoc.addPage([image.width, image.height]);
+  page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
+}
+
+async function sendNotificationEmail(data: AudenkiFormData, consentPdf: Buffer | null) {
   const gmailUser = process.env.GMAIL_USER;
   const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
   const recipient1 = process.env.NOTIFY_EMAIL_1;
@@ -98,6 +131,15 @@ async function sendNotificationEmail(data: AudenkiFormData) {
     to: recipients,
     subject: `【auでんき】新規お申し込み連携（${data.contractorName || "お名前未入力"}様）`,
     html: buildNotificationHtml(data),
+    attachments: consentPdf
+      ? [
+          {
+            filename: `同意書_${data.contractorName || "お客様"}.pdf`,
+            content: consentPdf,
+            contentType: "application/pdf",
+          },
+        ]
+      : [],
   });
 }
 
@@ -154,8 +196,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  let consentPdf: Buffer | null = null;
   try {
-    await sendNotificationEmail(data);
+    if (data.consentFormImage) {
+      consentPdf = await convertImageToPdf(data.consentFormImage);
+    }
+  } catch (err) {
+    console.error("PDF conversion error:", err);
+    // PDF変換に失敗しても、通知メール自体は送るようにします（添付なしになります）。
+  }
+
+  try {
+    await sendNotificationEmail(data, consentPdf);
   } catch (err) {
     // 保存は既に成功しているため、送信失敗はエラーとして返しつつ
     // データ自体はロストしないようにします（担当者は後から手動確認可能）。
