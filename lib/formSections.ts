@@ -43,6 +43,7 @@ export const PLAN_OPTIONS = [
   { value: "でんきMプラン", label: "でんきMプラン（一般家庭向け）" },
   { value: "でんきLプラン", label: "でんきLプラン" },
   { value: "でんきSプラン", label: "でんきSプラン" },
+  { value: "オクトパスエナジー", label: "オクトパスエナジー" },
 ];
 
 export const PREFECTURE_OPTIONS = [
