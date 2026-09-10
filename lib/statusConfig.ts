@@ -21,7 +21,7 @@ export const STATUS_STYLES: Record<ApplicationStatus, string> = {
   "①申し込み中": "bg-blue-50 text-blue-700 border-blue-200",
   "②後確認中": "bg-amber-50 text-amber-700 border-amber-200",
   "③返却": "bg-red-50 text-red-700 border-red-200",
-  "④完了": "bg-green-50 text-green-700 border-green-200",
+  "④完了": "bg-green-500 text-white border-green-600",
 };
 
 export function isValidStatus(value: string): value is ApplicationStatus {
