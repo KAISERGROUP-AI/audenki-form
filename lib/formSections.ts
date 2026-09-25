@@ -41,15 +41,15 @@ export const TIME_BAND_OPTIONS = [
 
 export const FOLLOW_UP_TIME_OPTIONS = [
   { value: "即時", label: "即時" },
-  { value: "11:00", label: "11:00〜" },
-  { value: "12:00", label: "12:00〜" },
-  { value: "13:00", label: "13:00〜" },
-  { value: "14:00", label: "14:00〜" },
-  { value: "15:00", label: "15:00〜" },
-  { value: "16:00", label: "16:00〜" },
-  { value: "17:00", label: "17:00〜" },
-  { value: "18:00", label: "18:00〜" },
-  { value: "19:00", label: "19:00〜" },
+  { value: "11:00", label: "11:00〜12:00" },
+  { value: "12:00", label: "12:00〜13:00" },
+  { value: "13:00", label: "13:00〜14:00" },
+  { value: "14:00", label: "14:00〜15:00" },
+  { value: "15:00", label: "15:00〜16:00" },
+  { value: "16:00", label: "16:00〜17:00" },
+  { value: "17:00", label: "17:00〜18:00" },
+  { value: "18:00", label: "18:00〜19:00" },
+  { value: "19:00", label: "19:00〜20:00" },
 ];
 
 export const PLAN_OPTIONS = [
@@ -214,65 +214,4 @@ export const FORM_SECTIONS: SectionConfig[] = [
         label: "名前（漢字）",
         type: "text",
         required: true,
-        placeholder: "例：山田 太郎",
-        autoComplete: "name",
-      },
-      {
-        path: "contractorNameKana",
-        label: "ふりがな",
-        type: "kana",
-        required: true,
-        placeholder: "例：やまだ たろう",
-      },
-      {
-        path: "birthDate",
-        label: "生年月日",
-        type: "date",
-        required: true,
-      },
-      {
-        path: "phoneNumber",
-        label: "電話番号",
-        type: "tel",
-        required: true,
-        placeholder: "例：09012345678（ハイフンなし）",
-        inputMode: "tel",
-        maxLength: 11,
-      },
-      {
-        path: "phoneType",
-        label: "電話番号区分",
-        type: "select",
-        required: true,
-        options: PHONE_TYPE_OPTIONS,
-        placeholder: "選択してください",
-      },
-    ],
-  },
-  {
-    number: "04",
-    title: "ご使用場所住所",
-    description: "電気を使用される場所のご住所です。",
-    fields: addressFields("usageAddress", true),
-  },
-  {
-    number: "05",
-    title: "引越し前住所",
-    description: "お引越しされるお客様のみご入力ください。お引越しがない場合は空欄のままで構いません。",
-    fields: addressFields("previousAddress", false),
-  },
-  {
-    number: "06",
-    title: "同意書",
-    description: "お客様に署名・捺印いただいた同意書を撮影してアップロードしてください。",
-    fields: [
-      {
-        path: "consentFormImage",
-        label: "同意書の写真",
-        type: "file",
-        required: true,
-        helpText: "文字がはっきり読める明るさ・角度で撮影してください。",
-      },
-    ],
-  },
-];
+        placeholder: "例：山田 
