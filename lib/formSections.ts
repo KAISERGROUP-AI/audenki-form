@@ -39,6 +39,19 @@ export const TIME_BAND_OPTIONS = [
   { value: "18:00-21:00", label: "18:00〜21:00" },
 ];
 
+export const FOLLOW_UP_TIME_OPTIONS = [
+  { value: "即時", label: "即時" },
+  { value: "11:00", label: "11:00〜" },
+  { value: "12:00", label: "12:00〜" },
+  { value: "13:00", label: "13:00〜" },
+  { value: "14:00", label: "14:00〜" },
+  { value: "15:00", label: "15:00〜" },
+  { value: "16:00", label: "16:00〜" },
+  { value: "17:00", label: "17:00〜" },
+  { value: "18:00", label: "18:00〜" },
+  { value: "19:00", label: "19:00〜" },
+];
+
 export const PLAN_OPTIONS = [
   { value: "でんきMプラン", label: "でんきMプラン（一般家庭向け）" },
   { value: "でんきLプラン", label: "でんきLプラン" },
@@ -176,11 +189,18 @@ export const FORM_SECTIONS: SectionConfig[] = [
         placeholder: "例：従量電灯A",
       },
       {
-        path: "currentAmpere",
-        label: "現在利用中のアンペア",
-        type: "text",
+        path: "followUpDate",
+        label: "後確認希望日",
+        type: "date",
         required: true,
-        placeholder: "例：30A",
+      },
+      {
+        path: "followUpTime",
+        label: "後確認希望時間",
+        type: "select",
+        required: true,
+        options: FOLLOW_UP_TIME_OPTIONS,
+        placeholder: "選択してください",
       },
     ],
   },
