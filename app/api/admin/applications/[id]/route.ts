@@ -174,3 +174,43 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   return NextResponse.json({ success: true, application: updated }, { status: 200 });
 }
+
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const token = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+  const user = await verifySessionToken(token);
+  if (!user) {
+    return NextResponse.json({ success: false, error: "ログインが必要です。" }, { status: 401 });
+  }
+  if (user.role !== "editor") {
+    return NextResponse.json(
+      { success: false, error: "この操作には編集者権限が必要です。" },
+      { status: 403 }
+    );
+  }
+
+  let supabase;
+  try {
+    supabase = getSupabaseServerClient();
+  } catch (err) {
+    console.error("Supabase client error:", err);
+    return NextResponse.json(
+      { success: false, error: "削除に失敗しました。環境変数の設定を確認してください。" },
+      { status: 500 }
+    );
+  }
+
+  const { error: deleteError } = await supabase
+    .from("audenki_applications")
+    .delete()
+    .eq("id", params.id);
+
+  if (deleteError) {
+    console.error("Supabase delete error:", deleteError);
+    return NextResponse.json(
+      { success: false, error: "案件の削除に失敗しました。" },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ success: true }, { status: 200 });
+}
