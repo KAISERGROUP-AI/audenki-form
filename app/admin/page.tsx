@@ -30,6 +30,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadApplications = useCallback(async (company: string) => {
     setLoading(true);
@@ -79,6 +80,30 @@ export default function AdminDashboardPage() {
   function handleStatusUpdated(id: string, newStatus: string, warning?: string) {
     setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a)));
     setWarningMessage(warning ?? null);
+  }
+
+  async function handleDelete(app: Application) {
+    const ok = window.confirm(
+      `「${app.contractor_name}」様の案件を削除しますか？\n削除すると元に戻せません。`
+    );
+    if (!ok) return;
+
+    setDeletingId(app.id);
+    setErrorMessage(null);
+    setWarningMessage(null);
+    try {
+      const res = await fetch(`/api/admin/applications/${app.id}`, { method: "DELETE" });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        setErrorMessage(result.error ?? "削除に失敗しました。");
+      } else {
+        setApplications((prev) => prev.filter((a) => a.id !== app.id));
+      }
+    } catch {
+      setErrorMessage("通信エラーが発生しました。");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   if (!user) {
@@ -133,6 +158,7 @@ export default function AdminDashboardPage() {
                   <th className="px-4 py-3 font-bold">使用開始希望日</th>
                   <th className="px-4 py-3 font-bold">連携日</th>
                   <th className="px-4 py-3 font-bold">ステータス</th>
+                  {user.role === "editor" && <th className="px-4 py-3 font-bold">削除</th>}
                 </tr>
               </thead>
               <tbody>
@@ -155,6 +181,19 @@ export default function AdminDashboardPage() {
                         <StatusBadge status={app.status} />
                       )}
                     </td>
+                    {user.role === "editor" && (
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(app)}
+                          disabled={deletingId === app.id}
+                          aria-label="この案件を削除"
+                          className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-sm font-bold text-red-600 hover:bg-red-100 disabled:opacity-50"
+                        >
+                          {deletingId === app.id ? "…" : "✖️"}
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
