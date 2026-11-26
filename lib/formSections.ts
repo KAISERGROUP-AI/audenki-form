@@ -57,6 +57,7 @@ export const PLAN_OPTIONS = [
   { value: "でんきLプラン", label: "でんきLプラン" },
   { value: "でんきSプラン", label: "でんきSプラン" },
   { value: "オクトパスエナジー", label: "オクトパスエナジー" },
+    { value: "エバーグリーン", label: "エバーグリーン" },
 ];
 
 export const PREFECTURE_OPTIONS = [
