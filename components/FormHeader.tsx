@@ -16,7 +16,7 @@ export function FormHeader({ step }: { step: Step }) {
           APPLICATION FORM
         </p>
         <h1 className="mt-2 text-[22px] font-bold leading-snug text-ink md:text-3xl">
-          auでんき申し込みフォーム連携
+          でんき申し込みフォーム連携
         </h1>
         <p className="mt-2 text-sm text-muted md:text-base">
           お客様の申込情報をご入力ください
