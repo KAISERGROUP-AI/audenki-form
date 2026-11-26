@@ -17,8 +17,8 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "auでんき申し込みフォーム連携",
-  description: "auでんきお申し込み情報の連携フォームです。",
+  title: "でんき申し込みフォーム連携",
+  description: "でんきお申し込み情報の連携フォームです。",
 };
 
 export default function RootLayout({
